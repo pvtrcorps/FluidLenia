@@ -1,0 +1,336 @@
+[gd_scene load_steps=4 format=3 uid="uid://bq2k8r7p6x0j8"]
+
+[ext_resource type="Script" path="res://scripts/LeniaSimulation.gd" id="1_lenia"]
+[ext_resource type="Shader" path="res://shaders/lenia_render.gdshader" id="2_render"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_render"]
+shader = ExtResource("2_render")
+shader_parameter/u_show_waste = 1.0
+shader_parameter/u_camera = Vector4(0, 0, 1, 0)
+
+[sub_resource type="ButtonGroup" id="ButtonGroup_brush"]
+
+[node name="LeniaSimulation" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_lenia")
+
+[node name="TextureRect" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+material = SubResource("ShaderMaterial_render")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="UILayer" type="CanvasLayer" parent="."]
+layer = 10
+
+[node name="Panel" type="PanelContainer" parent="UILayer"]
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -340.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = -10.0
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="Scroll" type="ScrollContainer" parent="UILayer/Panel"]
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="VBox" type="VBoxContainer" parent="UILayer/Panel/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Title" type="Label" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.92, 1, 1)
+text = "⚗️ FLOW LENIA"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+
+[node name="ButtonRow" type="HBoxContainer" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+
+[node name="BtnReset" type="Button" parent="UILayer/Panel/Scroll/VBox/ButtonRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "RESET"
+
+[node name="BtnClear" type="Button" parent="UILayer/Panel/Scroll/VBox/ButtonRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "CLEAR"
+
+[node name="BtnPause" type="Button" parent="UILayer/Panel/Scroll/VBox/ButtonRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "PAUSE"
+
+[node name="HSeparator2" type="HSeparator" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+
+[node name="LblSimulation" type="Label" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+text = "⏱️ SIMULATION"
+
+[node name="LblSPF" type="Label" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+text = "Steps/Frame: 3"
+
+[node name="SliderSPF" type="HSlider" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+min_value = 1.0
+max_value = 10.0
+value = 3.0
+
+[node name="LblDt" type="Label" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+text = "Delta T: 0.25"
+
+[node name="SliderDt" type="HSlider" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+min_value = 0.05
+max_value = 0.6
+step = 0.01
+value = 0.25
+
+[node name="LblR" type="Label" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+text = "Kernel Radius: 8"
+
+[node name="SliderR" type="HSlider" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+min_value = 4.0
+max_value = 16.0
+step = 1.0
+value = 8.0
+
+[node name="HSeparatorInit" type="HSeparator" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+
+[node name="LblInit" type="Label" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+text = "🌱 INITIALIZATION"
+
+[node name="LblDensity" type="Label" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+text = "Initial Density: 0.35"
+
+[node name="SliderDensity" type="HSlider" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+min_value = 0.05
+max_value = 0.5
+step = 0.01
+value = 0.35
+
+[node name="HSeparator3" type="HSeparator" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+
+[node name="LblEvolution" type="Label" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+text = "🧠 EVOLUTION"
+
+[node name="LblDietOffset" type="Label" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+text = "Diet Offset: 0.00"
+
+[node name="SliderDietOffset" type="HSlider" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+max_value = 0.5
+step = 0.01
+
+[node name="LblMutation" type="Label" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+text = "Mutation: 0.010"
+
+[node name="SliderMutation" type="HSlider" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+max_value = 0.1
+step = 0.001
+value = 0.01
+
+[node name="LblInertia" type="Label" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+text = "Inertia: 0.90"
+
+[node name="SliderInertia" type="HSlider" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+max_value = 0.99
+step = 0.01
+value = 0.9
+
+[node name="LblChemotaxis" type="Label" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+text = "Chemotaxis: 0.8"
+
+[node name="SliderChemotaxis" type="HSlider" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+max_value = 2.0
+step = 0.1
+value = 0.8
+
+[node name="HSeparatorMeta" type="HSeparator" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+
+[node name="LblMetabolism" type="Label" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+text = "🍗 METABOLISM"
+
+[node name="LblDecay" type="Label" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+text = "Decay: 0.012"
+
+[node name="SliderDecay" type="HSlider" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+min_value = 0.001
+max_value = 0.05
+step = 0.001
+value = 0.012
+
+[node name="LblEatRate" type="Label" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+text = "Eat Rate: 0.60"
+
+[node name="SliderEatRate" type="HSlider" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+max_value = 1.0
+step = 0.01
+value = 0.6
+
+[node name="LblDietSel" type="Label" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+text = "Diet Selectivity: 1.5"
+
+[node name="SliderDietSel" type="HSlider" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+min_value = 0.5
+max_value = 3.0
+step = 0.1
+value = 1.5
+
+[node name="HSeparator4" type="HSeparator" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+
+[node name="LblPhysics" type="Label" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+text = "⚙️ PHYSICS"
+
+[node name="LblGravity" type="Label" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+text = "Gravity: 0.000"
+
+[node name="SliderGravity" type="HSlider" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+max_value = 0.1
+step = 0.001
+
+[node name="LblFriction" type="Label" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+text = "Friction: 0.90"
+
+[node name="SliderFriction" type="HSlider" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+max_value = 1.0
+step = 0.01
+value = 0.9
+
+[node name="LblVelImpact" type="Label" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+text = "Vel. Impact: 2.0"
+
+[node name="SliderVelImpact" type="HSlider" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+max_value = 5.0
+step = 0.1
+value = 2.0
+
+[node name="LblImmiscibility" type="Label" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+text = "Immiscibility: 4.0"
+
+[node name="SliderImmiscibility" type="HSlider" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+min_value = 1.0
+max_value = 8.0
+step = 0.1
+value = 4.0
+
+[node name="ChkFloor" type="CheckBox" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+text = "Floor Enabled"
+
+[node name="HSeparator5" type="HSeparator" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+
+[node name="LblBrush" type="Label" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+text = "🖌️ BRUSH"
+
+[node name="BrushModeRow" type="HBoxContainer" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+
+[node name="BtnCreate" type="Button" parent="UILayer/Panel/Scroll/VBox/BrushModeRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+button_pressed = true
+button_group = SubResource("ButtonGroup_brush")
+text = "CREATE"
+
+[node name="BtnErase" type="Button" parent="UILayer/Panel/Scroll/VBox/BrushModeRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+button_group = SubResource("ButtonGroup_brush")
+text = "ERASE"
+
+[node name="LblBrushSize" type="Label" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+text = "Brush Size: 40"
+
+[node name="SliderBrushSize" type="HSlider" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+min_value = 5.0
+max_value = 100.0
+step = 1.0
+value = 40.0
+
+[node name="LblHue" type="Label" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+text = "Species Hue: 0.00"
+
+[node name="SliderHue" type="HSlider" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+max_value = 1.0
+step = 0.01
+
+[node name="ChkWaste" type="CheckBox" parent="UILayer/Panel/Scroll/VBox"]
+layout_mode = 2
+button_pressed = true
+text = "Show Waste (Food)"
+
+[node name="FPSLabel" type="Label" parent="UILayer"]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -100.0
+offset_top = -30.0
+grow_horizontal = 0
+grow_vertical = 0
+text = "FPS: 0"

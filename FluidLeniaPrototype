@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flow Lenia 2.6 - Momentum & Kinetic Impact</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #050505;
+            font-family: 'Segoe UI', monospace;
+            color: #ddd;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            background: #000;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+        }
+
+        #ui-container {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 320px;
+            background: rgba(10, 12, 16, 0.95);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            max-height: 90vh;
+            overflow-y: auto;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.8);
+            z-index: 10;
+        }
+
+        #ui-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #ui-container::-webkit-scrollbar-track {
+            background: #111;
+        }
+
+        #ui-container::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 3px;
+        }
+
+        h1 {
+            margin: 0 0 10px 0;
+            font-size: 1rem;
+            color: #00eaff;
+            text-align: center;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+
+        .control-group {
+            margin-bottom: 12px;
+            border-bottom: 1px solid #222;
+            padding-bottom: 8px;
+        }
+
+        label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            margin-bottom: 4px;
+            color: #aaa;
+            cursor: help;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            margin: 4px 0 8px 0;
+            background: transparent;
+            height: 20px;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 2px;
+            background: #333;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 14px;
+            width: 14px;
+            background: #00eaff;
+            border-radius: 50%;
+            margin-top: -6px;
+            box-shadow: 0 0 8px rgba(0, 234, 255, 0.4);
+            transition: transform 0.1s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        #inp-brush-hue {
+            background: linear-gradient(to right, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%);
+            height: 4px;
+            border-radius: 2px;
+        }
+
+        #inp-brush-hue::-webkit-slider-runnable-track {
+            background: transparent;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.75rem;
+            color: #aaa;
+            margin-top: 5px;
+        }
+
+        input[type="checkbox"] {
+            accent-color: #00eaff;
+            cursor: pointer;
+        }
+
+        button {
+            width: 100%;
+            padding: 8px;
+            background: #1a1a1a;
+            color: #fff;
+            border: 1px solid #444;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: 0.2s;
+            margin-bottom: 5px;
+            border-radius: 4px;
+        }
+
+        button:hover {
+            background: #00eaff;
+            color: #000;
+            border-color: #00eaff;
+        }
+
+        button.active {
+            background: #00eaff;
+            color: #000;
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(0, 234, 255, 0.3);
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 5px;
+        }
+
+        .radio-btn {
+            flex: 1;
+            padding: 6px;
+            font-size: 0.7rem;
+            text-align: center;
+            background: #222;
+            border: 1px solid #444;
+            cursor: pointer;
+            color: #888;
+            border-radius: 4px;
+        }
+
+        .radio-btn.selected {
+            background: #00eaff;
+            color: #000;
+            font-weight: bold;
+            border-color: #00eaff;
+        }
+
+        .radio-btn.selected.danger {
+            background: #ff3333;
+            color: #fff;
+            border-color: #ff0000;
+        }
+
+        .val {
+            color: #00eaff;
+            font-weight: bold;
+            font-family: monospace;
+        }
+
+        .legend-box {
+            background: #111;
+            padding: 8px;
+            border-radius: 4px;
+            margin-top: 5px;
+            border: 1px solid #222;
+        }
+
+        .legend-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+            font-size: 0.7rem;
+            color: #bbb;
+        }
+
+        .legend-bar {
+            flex: 1;
+            height: 8px;
+            border-radius: 2px;
+            margin: 0 8px;
+            position: relative;
+        }
+
+        .legend-text {
+            flex: 2;
+            font-size: 0.65rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .grad-hue {
+            background: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f);
+        }
+
+        .grad-sat {
+            background: linear-gradient(to right, #555, #f00);
+        }
+
+        .fps-counter {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            color: #444;
+            font-size: 0.7rem;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="canvas-container">
+        <canvas id="glcanvas"></canvas>
+    </div>
+
+    <div id="ui-container">
+        <h1>ECO-VECTOR 2.6 <span style="font-size:0.5em; vertical-align:middle; color:#666">MOMENTUM</span></h1>
+
+        <div class="control-group">
+            <label style="color:#fff" title="Interpretación de los colores">👁️ LEYENDA VISUAL</label>
+            <div class="legend-box">
+                <div style="font-size:0.7rem; color:#fff; margin-bottom:2px;">COLOR (Estructura Física)</div>
+                <div class="legend-row">
+                    <div class="legend-bar grad-hue"></div>
+                </div>
+                <div class="legend-text" style="margin-bottom:8px; color:#888;">
+                    <span>Compacto</span><span>Expansivo</span></div>
+
+                <div style="font-size:0.7rem; color:#fff; margin-bottom:2px;">INTENSIDAD (Dieta)</div>
+                <div class="legend-row">
+                    <div class="legend-bar grad-sat"></div>
+                </div>
+                <div class="legend-text" style="margin-bottom:8px; color:#888;">
+                    <span>Generalista</span><span>Especialista</span></div>
+            </div>
+            <div class="checkbox-container">
+                <input type="checkbox" id="chk-waste" checked>
+                <span>Ver Residuos (Comida)</span>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label style="color:#fff">🖌️ PINCEL DE DIOS</label>
+            <div class="radio-group">
+                <div id="btn-brush-life" class="radio-btn selected" onclick="setBrushMode(1)">CREAR (Masa)</div>
+                <div id="btn-brush-death" class="radio-btn" onclick="setBrushMode(-1)">BORRAR (Vacío)</div>
+            </div>
+            <label>Color Especie <span class="val" id="val-bhue" style="color:#fff">■</span></label>
+            <input type="range" id="inp-brush-hue" min="0.0" max="1.0" step="0.01">
+        </div>
+
+        <div class="control-group">
+            <div style="display:flex; gap:5px;">
+                <button id="btn-reset">REINICIAR</button>
+                <button id="btn-clear">LIMPIAR TODO</button>
+                <button id="btn-pause">PAUSA</button>
+            </div>
+            <label>Densidad Inicial <span class="val" id="val-dens"></span></label>
+            <input type="range" id="inp-dens" min="0.05" max="0.5" step="0.01">
+        </div>
+
+        <div class="control-group">
+            <label style="color:#fff">🧠 EVOLUCIÓN</label>
+            <label>Desfase Dieta <span class="val" id="val-doffset"></span></label>
+            <input type="range" id="inp-doffset" min="0.0" max="0.5" step="0.01">
+            <label>Quimiotaxis (Olfato) <span class="val" id="val-chem"></span></label>
+            <input type="range" id="inp-chem" min="0.0" max="2.0" step="0.1">
+            <label>Tasa Mutación <span class="val" id="val-mut"></span></label>
+            <input type="range" id="inp-mut" min="0.0" max="0.1" step="0.001">
+            <label>Inercia Genética <span class="val" id="val-inertia"></span></label>
+            <input type="range" id="inp-inertia" min="0.0" max="0.99" step="0.01">
+        </div>
+
+        <div class="control-group">
+            <label style="color:#fff">⚙️ FÍSICA NEWTONIANA</label>
+            <label>Gravedad <span class="val" id="val-grav"></span></label>
+            <input type="range" id="inp-grav" min="0.0" max="0.1" step="0.001">
+
+            <label>Fricción del Aire <span class="val" id="val-friction"></span></label>
+            <input type="range" id="inp-friction" min="0.0" max="1.0" step="0.01" value="0.9">
+
+            <label>Impacto Cinético (Winner) <span class="val" id="val-vel-impact"></span></label>
+            <input type="range" id="inp-vel-impact" min="0.0" max="5.0" step="0.1" value="2.0">
+
+            <label>Inmiscibilidad (Bordes) <span class="val" id="val-immiscibility"></span></label>
+            <input type="range" id="inp-immiscibility" min="1.0" max="8.0" step="0.1" value="4.0">
+
+            <div class="checkbox-container" style="margin-bottom:8px;">
+                <input type="checkbox" id="chk-floor">
+                <span>Suelo Cerrado</span>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label style="color:#fff">⏱️ SIMULACIÓN</label>
+            <label>Pasos/Frame <span class="val" id="val-spf"></span></label>
+            <input type="range" id="inp-spf" min="1" max="10" step="1">
+            <label>Delta T <span class="val" id="val-dt"></span></label>
+            <input type="range" id="inp-dt" min="0.05" max="0.6" step="0.01">
+            <label>Radio Kernel <span class="val" id="val-R"></span></label>
+            <input type="range" id="inp-R" min="4" max="16" step="1">
+        </div>
+    </div>
+    <div class="fps-counter" id="fps">FPS: 0</div>
+
+    <!-- SHADERS -->
+    <script type="x-shader/x-vertex" id="vert-shader">
+        #version 300 es
+        in vec2 a_position; out vec2 v_uv;
+        void main() { v_uv = a_position * 0.5 + 0.5; gl_Position = vec4(a_position, 0.0, 1.0); }
+    </script>
+
+    <script type="x-shader/x-fragment" id="frag-init">
+        #version 300 es
+        precision highp float;
+        layout(location = 0) out vec4 outLiving; layout(location = 1) out vec4 outWaste;
+        uniform vec2 u_res; uniform float u_seed; uniform float u_density; uniform float u_initGrid;
+        
+        float hash(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+        
+        void main() {
+            vec2 uv = gl_FragCoord.xy / u_res;
+            float rnd = hash(gl_FragCoord.xy + u_seed * 123.0);
+            
+            // Inicio esparcido
+            float mass = step(1.0 - u_density, rnd); 
+            if(mass > 0.0) mass = 0.5 + 0.5 * hash(gl_FragCoord.xy + u_seed * 99.0);
+
+            vec2 cellID = floor(uv * u_initGrid);
+            float cellSeed = hash(cellID + u_seed * 77.7);
+            
+            float muStruct = cellSeed; 
+            float drift = (hash(cellID * 1.1) - 0.5) * 0.2;
+            float muDiet = fract(muStruct + drift); 
+            float sig = 0.015 + hash(cellID * 1.5 + u_seed) * 0.035;
+            
+            outLiving = vec4(mass, muStruct, muDiet, sig);
+            
+            // Inicio con residuos ambientales para arrancar el metabolismo
+            // CANALES B y A ahora son VELOCIDAD (X, Y) inicializada a 0
+            float wasteNoise = hash(uv * 10.0 + u_seed);
+            outWaste = vec4(wasteNoise * 0.2, hash(uv * 5.0), 0.0, 0.0);
+        }
+    </script>
+
+    <script type="x-shader/x-fragment" id="frag-conv">
+        #version 300 es
+        precision highp float;
+        uniform sampler2D u_tex; uniform vec2 u_res; uniform float u_R;
+        out vec4 outPotential;
+        
+        float gaussian(float r, float mu, float sigma) { return exp(-0.5 * ((r - mu) / sigma) * ((r - mu) / sigma)); }
+        
+        // Kernel de Lenia adaptado a especies
+        float K(float r, float mu) {
+            float k1 = gaussian(r, 0.15, 0.08); 
+            float k2 = gaussian(r, 0.5 + mu * 0.2, 0.12); 
+            float k3 = gaussian(r, 0.85, 0.08);
+            return mix(k1 * 0.5 + k2, k2 + k3 * 0.8, mu);
+        }
+        
+        void main() {
+            vec2 uv = gl_FragCoord.xy / u_res;
+            float sum = 0.0; float totalWeight = 0.0;
+            float centerMu = texture(u_tex, uv).g;
+            
+            int radius = int(u_R);
+            for(int y = -radius; y <= radius; y++) {
+                for(int x = -radius; x <= radius; x++) {
+                    vec2 offset = vec2(float(x), float(y));
+                    float r = length(offset) / float(radius);
+                    if(r <= 1.0) {
+                        float w = K(r, centerMu);
+                        sum += texture(u_tex, uv + offset / u_res).r * w;
+                        totalWeight += w;
+                    }
+                }
+            }
+            if(totalWeight > 0.0) sum /= totalWeight;
+            outPotential = vec4(sum, 0.0, 0.0, 1.0);
+        }
+    </script>
+
+    <script type="x-shader/x-fragment" id="frag-flow">
+        #version 300 es
+        precision highp float;
+        uniform sampler2D u_tex_Living; uniform sampler2D u_tex_Waste; uniform sampler2D u_tex_K;      
+        layout(location = 0) out vec4 outNewLiving; layout(location = 1) out vec4 outNewWaste;
+        
+        uniform vec2 u_res; uniform float u_dt; uniform float u_seed;
+        uniform float u_decay; uniform float u_eat_rate; uniform float u_diet_selectivity;
+        uniform float u_chemotaxis; uniform float u_mutation_rate; uniform float u_inertia; 
+        
+        uniform vec2 u_mouseWorld; uniform float u_mouseClick; uniform float u_brushSize;
+        uniform float u_brushHue; uniform float u_brushMode; 
+        uniform float u_dietOffset;
+
+        uniform float u_gravity; uniform float u_floor;
+        uniform float u_immiscibility; 
+        uniform float u_friction; // Nuevo: Fricción
+        uniform float u_vel_impact; // Nuevo: Peso de la velocidad en la mezcla
+
+        float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+        float getEffectiveMu(float gene) { return 0.08 + gene * 0.42; }
+
+        float G(float u, float mu, float sigma) {
+            float effMu = getEffectiveMu(mu);
+            return 2.0 * exp(-0.5 * pow((u - effMu) / sigma, 2.0)) - 1.0;
+        }
+
+        void main() {
+            vec2 px = 1.0 / u_res; vec2 uv = gl_FragCoord.xy / u_res;
+            
+            // --- 1. ADVECCIÓN DE BIOMASA + MOMENTO ---
+            float newMass = 0.0;
+            
+            // Acumuladores
+            vec3 traitAccumulator = vec3(0.0);
+            float weightAccumulator = 0.0;
+            vec2 momentumAccumulator = vec2(0.0); // Acumular momento (masa * velocidad)
+            
+            int searchR = 3;
+            
+            for(int y = -searchR; y <= searchR; y++) {
+                for(int x = -searchR; x <= searchR; x++) {
+                    vec2 offset = vec2(float(x), float(y));
+                    vec2 srcUV = uv + offset * px;
+                    
+                    if(u_floor > 0.5 && (srcUV.y < 0.0 || srcUV.y > 1.0)) continue;
+
+                    vec4 srcState = texture(u_tex_Living, srcUV);
+                    float m = srcState.r;
+                    
+                    if(m > 0.001) {
+                        // --- FÍSICA NEWTONIANA ---
+                        // 1. Leer Velocidad Anterior (almacenada en Waste.ba)
+                        vec2 oldVel = texture(u_tex_Waste, srcUV).ba;
+                        
+                        // 2. Calcular Fuerza (Aceleración)
+                        float K_C = texture(u_tex_K, srcUV).r;
+                        float K_L = texture(u_tex_K, srcUV - vec2(px.x, 0)).r; float K_R = texture(u_tex_K, srcUV + vec2(px.x, 0)).r;
+                        float K_B = texture(u_tex_K, srcUV - vec2(0, px.y)).r; float K_T = texture(u_tex_K, srcUV + vec2(0, px.y)).r;
+                        
+                        float muStr = srcState.g; float muDiet = srcState.b; float sig = srcState.a;
+                        vec2 grad_U = vec2(G(K_R, muStr, sig) - G(K_L, muStr, sig), G(K_T, muStr, sig) - G(K_B, muStr, sig)) * 0.5;
+                        
+                        float M_L = texture(u_tex_Living, srcUV - vec2(px.x, 0)).r; float M_R = texture(u_tex_Living, srcUV + vec2(px.x, 0)).r;
+                        float M_B = texture(u_tex_Living, srcUV - vec2(0, px.y)).r; float M_T = texture(u_tex_Living, srcUV + vec2(0, px.y)).r;
+                        vec2 grad_M = vec2(M_R - M_L, M_T - M_B) * 0.5;
+
+                        vec2 grad_Food = vec2(0.0);
+                        if(u_chemotaxis > 0.0) {
+                            vec4 wC = texture(u_tex_Waste, srcUV);
+                            float hunger = max(0.0, 1.0 - wC.r * 1.5); 
+                            if(hunger > 0.0) {
+                                vec4 wL = texture(u_tex_Waste, srcUV - vec2(px.x, 0)); vec4 wR = texture(u_tex_Waste, srcUV + vec2(px.x, 0));
+                                vec4 wB = texture(u_tex_Waste, srcUV - vec2(0, px.y)); vec4 wT = texture(u_tex_Waste, srcUV + vec2(0, px.y));
+                                float targetType = fract(muDiet + u_dietOffset);
+                                float affL = (1.0 - abs(wL.g - targetType)) * wL.r; float affR = (1.0 - abs(wR.g - targetType)) * wR.r;
+                                float affB = (1.0 - abs(wB.g - targetType)) * wB.r; float affT = (1.0 - abs(wT.g - targetType)) * wT.r;
+                                grad_Food = vec2(affR - affL, affT - affB) * hunger;
+                            }
+                        }
+
+                        vec2 acceleration = grad_U - grad_M * 2.0 + grad_Food * u_chemotaxis;
+                        acceleration.y -= u_gravity * 8.0; 
+
+                        // 3. Integración de Euler (Velocidad)
+                        // Vel = Vel_anterior * friccion + Fuerza * dt
+                        vec2 dynamicVel = oldVel * u_friction + acceleration * u_dt;
+                        
+                        // Limite de velocidad para estabilidad
+                        if(length(dynamicVel) > 5.0) dynamicVel = normalize(dynamicVel) * 5.0;
+
+                        // 4. Desplazamiento
+                        vec2 dest = srcUV + dynamicVel * u_dt * px;
+                        
+                        if(u_floor > 0.5) dest.y = clamp(dest.y, 0.001, 0.999);
+
+                        vec2 distVec = (dest - uv) * u_res; 
+                        float weight = max(0.0, 1.0 - abs(distVec.x)) * max(0.0, 1.0 - abs(distVec.y));
+                        
+                        if(weight > 0.0) {
+                            float incomingMass = m * weight;
+                            newMass += incomingMass;
+                            
+                            // MEZCLA DE FLUIDOS POTENCIADA POR VELOCIDAD
+                            // Peso = Masa * (1 + Velocidad * Impacto) ^ Inmiscibilidad
+                            float velocityFactor = 1.0 + length(dynamicVel) * u_vel_impact;
+                            float effectiveImpact = incomingMass * velocityFactor;
+                            float sharpWeight = pow(effectiveImpact, u_immiscibility);
+                            
+                            traitAccumulator += srcState.gba * sharpWeight;
+                            weightAccumulator += sharpWeight;
+
+                            // CONSERVACIÓN DE MOMENTO (Inercia)
+                            // La velocidad se transfiere a la nueva celda ponderada por masa
+                            momentumAccumulator += dynamicVel * incomingMass;
+                        }
+                    }
+                }
+            }
+
+            vec3 finalTraits = vec3(0.0, 0.0, 0.03);
+            vec2 finalVel = vec2(0.0);
+
+            if(newMass > 0.0001) {
+                // Rasgos ganadores
+                if (weightAccumulator > 0.0) {
+                    finalTraits = traitAccumulator / weightAccumulator;
+                }
+                // Velocidad promedio (Momento Total / Masa Total)
+                finalVel = momentumAccumulator / newMass;
+            }
+
+            // Mutación
+            if(newMass > 0.01 && u_mutation_rate > 0.0) {
+                if(hash(uv + u_seed) < 0.2) {
+                     float drift = (hash(uv * 1.1 + u_seed) - 0.5) * u_mutation_rate;
+                     finalTraits.y = clamp(finalTraits.y + drift * 4.0, 0.0, 1.0); 
+                     finalTraits.x = clamp(finalTraits.x + drift, 0.0, 1.0);
+                     finalTraits.z = clamp(finalTraits.z + drift * 0.5, 0.01, 0.1);
+                }
+            }
+            
+            // Inercia Genética
+            vec4 oldState = texture(u_tex_Living, uv);
+            if(oldState.r > 0.01) finalTraits = mix(finalTraits, oldState.gba, u_inertia);
+
+            // --- 2. GESTIÓN DE RESIDUOS Y DIFUSIÓN ---
+            vec4 wCenter = texture(u_tex_Waste, uv);
+            vec4 wL = texture(u_tex_Waste, uv - vec2(px.x, 0)); vec4 wR = texture(u_tex_Waste, uv + vec2(px.x, 0));
+            vec4 wT = texture(u_tex_Waste, uv + vec2(0, px.y)); vec4 wB = texture(u_tex_Waste, uv - vec2(0, px.y));
+            
+            // Difusión simple (Viscosidad para la velocidad)
+            vec4 wasteDiffusion = (wL + wR + wT + wB) * 0.25 - wCenter;
+            // Difundimos TODO: Masa(R), Tipo(G) y VELOCIDAD(BA)
+            // Esto crea viscosidad física real en el fluido de velocidades.
+            vec4 diffusedWaste = wCenter + wasteDiffusion * 0.5; 
+            
+            float wMass = max(0.0, diffusedWaste.r);
+            float wType = diffusedWaste.g;
+
+            // Digestión
+            float targetType = fract(finalTraits.y + u_dietOffset);
+            float enzyme = getEffectiveMu(targetType);
+            float wasteStruct = getEffectiveMu(wType);
+            float similarity = 1.0 - abs(enzyme - wasteStruct);
+            float efficiency = smoothstep(1.0 - (0.5/u_diet_selectivity), 1.0, similarity);
+            
+            float eaten = 0.0;
+            if(newMass > 0.001 && wMass > 0.001) {
+                eaten = min(wMass, newMass * u_eat_rate * efficiency * u_dt);
+                newMass += eaten;
+                wMass -= eaten; 
+            }
+
+            // Muerte/Hacinamiento
+            float crowdPenalty = max(0.0, newMass - 1.2) * 1.5; 
+            float deathRate = u_decay + crowdPenalty;
+            float deadMass = min(newMass, newMass * deathRate);
+            
+            newMass -= deadMass;
+            float newWasteMass = wMass + deadMass; 
+            
+            float newWasteType = wType;
+            if(newWasteMass > 0.0001 && deadMass > 0.0) {
+                newWasteType = mix(wType, finalTraits.x, deadMass / newWasteMass);
+            }
+
+            // Pincel de Dios
+            vec2 dMouse = (uv - u_mouseWorld); dMouse.x *= u_res.x/u_res.y;
+            if(u_mouseClick > 0.5 && length(dMouse)*u_res.y < u_brushSize) {
+                if (u_brushMode > 0.0) {
+                    newMass += 0.5; 
+                    finalTraits = vec3(u_brushHue, u_brushHue, 0.03);
+                    // Opcional: inyectar velocidad con el ratón? Por ahora 0.
+                } else {
+                    newMass = 0.0; 
+                    newWasteMass = 0.0;
+                    finalVel = vec2(0.0);
+                }
+            }
+            
+            // GUARDAMOS VELOCIDAD EN CANALES B y A DE RESIDUOS
+            // Usamos mix para incorporar suavemente la nueva velocidad calculada
+            // aunque diffusedWaste.ba ya tiene la viscosidad.
+            vec2 outputVel = mix(diffusedWaste.ba, finalVel, 0.5); 
+            // Si hay muy poca masa, matamos la velocidad para evitar valores fantasma
+            if(newMass < 0.001) outputVel = vec2(0.0);
+
+            outNewLiving = vec4(newMass, finalTraits);
+            outNewWaste = vec4(newWasteMass, newWasteType, outputVel.x, outputVel.y);
+        }
+    </script>
+
+    <script type="x-shader/x-fragment" id="frag-render">
+        #version 300 es
+        precision highp float;
+        in vec2 v_uv; 
+        uniform sampler2D u_tex_Living; uniform sampler2D u_tex_Waste; 
+        uniform vec4 u_camera; uniform float u_show_waste;
+        uniform vec2 u_res; 
+        out vec4 outColor;
+        
+        vec3 hsv2rgb(vec3 c) { vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0); vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www); return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y); }
+
+        void main() {
+            vec2 uv = v_uv; uv -= 0.5; uv /= u_camera.z; uv += u_camera.xy; uv += 0.5;
+            
+            vec4 lData = texture(u_tex_Living, uv);
+            vec4 wData = texture(u_tex_Waste, uv);
+            
+            float lMass = lData.r;
+            float lStruct = lData.g; // HUE
+            float lDiet = lData.b;   // SATURATION
+            
+            float wMass = wData.r;
+            float wType = wData.g;
+            
+            // Visualización de Vida
+            float saturation = 0.1 + lDiet * 0.9;
+            float visibleMass = 1.0 - exp(-lMass * 1.5);
+            vec3 livingCol = hsv2rgb(vec3(lStruct, saturation, visibleMass));
+            
+            // Visualización de Residuos
+            vec3 wasteCol = vec3(0.0);
+            if(u_show_waste > 0.5) {
+                float visibleWaste = 1.0 - exp(-wMass * 0.8);
+                wasteCol = hsv2rgb(vec3(wType, 0.3, visibleWaste * 0.5));
+            }
+            
+            vec3 col = livingCol + wasteCol;
+            col = col / (1.0 + col); 
+            col = pow(col, vec3(0.8)); 
+            
+            if(uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) col *= 0.1;
+            
+            outColor = vec4(col, 1.0);
+        }
+    </script>
+
+    <script>
+        // CONFIGURACIÓN INICIAL
+        const config = {
+            R: 8,
+            dt: 0.25,
+            spf: 3,
+            brushRadius: 40.0,
+            mutation: 0.01,
+            inertia: 0.90,
+            decay: 0.012,
+            eatRate: 0.6,
+            dietSelectivity: 1.5,
+            chemotaxis: 0.8,
+            showWaste: 1.0,
+            brushHue: 0.0,
+            brushMode: 1.0,
+            dietOffset: 0.0,
+            resolutionMultiplier: 1.0,
+            initialDensity: 0.35,
+            initGrid: 16,
+            gravity: 0.0,
+            floor: 0.0,
+            immiscibility: 4.0,
+            friction: 0.9,
+            velImpact: 2.0
+        };
+
+        const state = { paused: false, camX: 0, camY: 0, zoom: 1.0, dragging: false, lastX: 0, lastY: 0, paint: false, mx: 0, my: 0, fpsTime: 0, fpsFrames: 0 };
+        const canvas = document.getElementById('glcanvas');
+        const gl = canvas.getContext('webgl2', { antialias: false, depth: false, powerPreference: "high-performance" });
+        if (!gl) alert("WebGL2 requerido");
+
+        gl.getExtension('EXT_color_buffer_float');
+        gl.getExtension('OES_texture_float_linear');
+
+        function createShader(type, src) { const s = gl.createShader(type); gl.shaderSource(s, src.trim()); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(s)); return s; }
+        function createProgram(vs, fs) { const p = gl.createProgram(); gl.attachShader(p, createShader(gl.VERTEX_SHADER, vs)); gl.attachShader(p, createShader(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(p); if (!gl.getProgramParameter(p, gl.LINK_STATUS)) console.error(gl.getProgramInfoLog(p)); return p; }
+        const quadBuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+
+        let simRes = 800;
+        let fboA, fboB, texConv;
+        let texLA, texWA, texLB, texWB;
+
+        function createTex(w, h) {
+            const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, w, h, 0, gl.RGBA, gl.FLOAT, null);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+            return t;
+        }
+        function createDoubleFBO(w, h) { const fb = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, fb); const t1 = createTex(w, h); const t2 = createTex(w, h); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t1, 0); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, t2, 0); gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1]); return { fb, t1, t2 }; }
+
+        function resize() {
+            simRes = Math.floor(window.innerWidth * config.resolutionMultiplier);
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            const setA = createDoubleFBO(simRes, simRes); fboA = setA.fb; texLA = setA.t1; texWA = setA.t2;
+            const setB = createDoubleFBO(simRes, simRes); fboB = setB.fb; texLB = setB.t1; texWB = setB.t2;
+            const tc = createTex(simRes, simRes); const fc = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, fc); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tc, 0); texConv = { tex: tc, fb: fc };
+            runInit();
+        }
+
+        const progInit = createProgram(document.getElementById('vert-shader').textContent, document.getElementById('frag-init').textContent);
+        const progConv = createProgram(document.getElementById('vert-shader').textContent, document.getElementById('frag-conv').textContent);
+        const progFlow = createProgram(document.getElementById('vert-shader').textContent, document.getElementById('frag-flow').textContent);
+        const progRender = createProgram(document.getElementById('vert-shader').textContent, document.getElementById('frag-render').textContent);
+
+        function runQuad(prog) { gl.useProgram(prog); const loc = gl.getAttribLocation(prog, 'a_position'); gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0); gl.drawArrays(gl.TRIANGLES, 0, 6); }
+
+        function runInit() {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fboA); gl.viewport(0, 0, simRes, simRes); gl.useProgram(progInit);
+            gl.uniform2f(gl.getUniformLocation(progInit, 'u_res'), simRes, simRes);
+            gl.uniform1f(gl.getUniformLocation(progInit, 'u_seed'), Math.random() * 100);
+            gl.uniform1f(gl.getUniformLocation(progInit, 'u_density'), config.initialDensity);
+            gl.uniform1f(gl.getUniformLocation(progInit, 'u_initGrid'), config.initGrid);
+            runQuad(progInit);
+        }
+
+        let flip = false;
+        function step(timestamp) {
+            if (timestamp - state.fpsTime > 1000) { document.getElementById('fps').innerText = `FPS: ${state.fpsFrames}`; state.fpsTime = timestamp; state.fpsFrames = 0; }
+            state.fpsFrames++;
+
+            if (!state.paused || state.paint) {
+                for (let i = 0; i < config.spf; i++) {
+                    const srcL = flip ? texLB : texLA; const srcW = flip ? texWB : texWA; const dstFB = flip ? fboA : fboB;
+
+                    // 1. Convolution
+                    gl.bindFramebuffer(gl.FRAMEBUFFER, texConv.fb); gl.viewport(0, 0, simRes, simRes); gl.useProgram(progConv);
+                    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, srcL); gl.uniform1i(gl.getUniformLocation(progConv, 'u_tex'), 0);
+                    gl.uniform2f(gl.getUniformLocation(progConv, 'u_res'), simRes, simRes); gl.uniform1f(gl.getUniformLocation(progConv, 'u_R'), config.R);
+                    runQuad(progConv);
+
+                    // 2. Flow
+                    gl.bindFramebuffer(gl.FRAMEBUFFER, dstFB); gl.useProgram(progFlow);
+                    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, srcL); gl.uniform1i(gl.getUniformLocation(progFlow, 'u_tex_Living'), 0);
+                    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, srcW); gl.uniform1i(gl.getUniformLocation(progFlow, 'u_tex_Waste'), 1);
+                    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, texConv.tex); gl.uniform1i(gl.getUniformLocation(progFlow, 'u_tex_K'), 2);
+
+                    gl.uniform2f(gl.getUniformLocation(progFlow, 'u_res'), simRes, simRes);
+                    gl.uniform1f(gl.getUniformLocation(progFlow, 'u_dt'), config.dt);
+                    gl.uniform1f(gl.getUniformLocation(progFlow, 'u_seed'), Math.random() * 100);
+                    gl.uniform1f(gl.getUniformLocation(progFlow, 'u_decay'), config.decay);
+                    gl.uniform1f(gl.getUniformLocation(progFlow, 'u_eat_rate'), config.eatRate);
+                    gl.uniform1f(gl.getUniformLocation(progFlow, 'u_diet_selectivity'), config.dietSelectivity);
+                    gl.uniform1f(gl.getUniformLocation(progFlow, 'u_chemotaxis'), config.chemotaxis);
+                    gl.uniform1f(gl.getUniformLocation(progFlow, 'u_mutation_rate'), config.mutation);
+                    gl.uniform1f(gl.getUniformLocation(progFlow, 'u_inertia'), config.inertia);
+                    gl.uniform1f(gl.getUniformLocation(progFlow, 'u_brushHue'), config.brushHue);
+                    gl.uniform1f(gl.getUniformLocation(progFlow, 'u_brushMode'), config.brushMode);
+                    gl.uniform1f(gl.getUniformLocation(progFlow, 'u_dietOffset'), config.dietOffset);
+                    gl.uniform1f(gl.getUniformLocation(progFlow, 'u_gravity'), config.gravity);
+                    gl.uniform1f(gl.getUniformLocation(progFlow, 'u_floor'), config.floor);
+                    gl.uniform1f(gl.getUniformLocation(progFlow, 'u_immiscibility'), config.immiscibility);
+                    gl.uniform1f(gl.getUniformLocation(progFlow, 'u_friction'), config.friction);
+                    gl.uniform1f(gl.getUniformLocation(progFlow, 'u_vel_impact'), config.velImpact);
+
+                    let mx = (state.mx) / canvas.width; let my = 1.0 - (state.my) / canvas.height;
+                    let wx = (mx - 0.5) / state.zoom + state.camX + 0.5; let wy = (my - 0.5) / state.zoom + state.camY + 0.5;
+                    gl.uniform2f(gl.getUniformLocation(progFlow, 'u_mouseWorld'), wx, wy); gl.uniform1f(gl.getUniformLocation(progFlow, 'u_mouseClick'), state.paint ? 1.0 : 0.0); gl.uniform1f(gl.getUniformLocation(progFlow, 'u_brushSize'), config.brushRadius);
+                    runQuad(progFlow); flip = !flip;
+                }
+            }
+
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, canvas.width, canvas.height); gl.useProgram(progRender);
+            const srcL = flip ? texLB : texLA; const srcW = flip ? texWB : texWA;
+            gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, srcL); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, srcW);
+            gl.uniform1i(gl.getUniformLocation(progRender, 'u_tex_Living'), 0); gl.uniform1i(gl.getUniformLocation(progRender, 'u_tex_Waste'), 1);
+            gl.uniform4f(gl.getUniformLocation(progRender, 'u_camera'), state.camX, state.camY, state.zoom, 0.0);
+            gl.uniform1f(gl.getUniformLocation(progRender, 'u_show_waste'), config.showWaste);
+            gl.uniform2f(gl.getUniformLocation(progRender, 'u_res'), simRes, simRes);
+            runQuad(progRender); requestAnimationFrame(step);
+        }
+
+        window.setBrushMode = function (m) {
+            config.brushMode = m;
+            document.getElementById('btn-brush-life').className = m > 0 ? 'radio-btn selected' : 'radio-btn';
+            document.getElementById('btn-brush-death').className = m < 0 ? 'radio-btn selected danger' : 'radio-btn';
+        };
+
+        const updateUI = () => {
+            const set = (id, v, f = 2) => { const el = document.getElementById('inp-' + id); if (el) el.value = v; const disp = document.getElementById('val-' + id); if (disp) disp.innerText = v.toFixed(f); };
+            set('spf', config.spf, 0); set('dt', config.dt, 2); set('inertia', config.inertia, 2); set('mut', config.mutation, 4);
+            set('decay', config.decay, 3); set('eat', config.eatRate, 2); set('diet', config.dietSelectivity, 2); set('R', config.R, 0);
+            set('chem', config.chemotaxis, 1); set('dens', config.initialDensity, 2);
+            set('doffset', config.dietOffset, 2);
+            set('grav', config.gravity, 3);
+            set('immiscibility', config.immiscibility, 1);
+            set('friction', config.friction, 2);
+            set('vel-impact', config.velImpact, 1);
+
+            const hVal = config.brushHue;
+            document.getElementById('inp-brush-hue').value = hVal;
+            const rgb = hsvToRgb(hVal, 1, 1);
+            document.getElementById('val-bhue').style.color = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+        };
+
+        function hsvToRgb(h, s, v) {
+            let r, g, b;
+            let i = Math.floor(h * 6);
+            let f = h * 6 - i;
+            let p = v * (1 - s);
+            let q = v * (1 - f * s);
+            let t = v * (1 - (1 - f) * s);
+            switch (i % 6) {
+                case 0: r = v; g = t; b = p; break;
+                case 1: r = q; g = v; b = p; break;
+                case 2: r = p; g = v; b = t; break;
+                case 3: r = p; g = q; b = v; break;
+                case 4: r = t; g = p; b = v; break;
+                case 5: r = v; g = p; b = q; break;
+            }
+            return [Math.floor(r * 255), Math.floor(g * 255), Math.floor(b * 255)];
+        }
+
+        const configMap = { 'spf': 'spf', 'dt': 'dt', 'inertia': 'inertia', 'mut': 'mutation', 'decay': 'decay', 'eat': 'eatRate', 'diet': 'dietSelectivity', 'R': 'R', 'chem': 'chemotaxis', 'dens': 'initialDensity', 'brush-hue': 'brushHue', 'doffset': 'dietOffset', 'grav': 'gravity', 'immiscibility': 'immiscibility', 'friction': 'friction', 'vel-impact': 'velImpact' };
+        Object.keys(configMap).forEach(k => {
+            const el = document.getElementById('inp-' + k);
+            if (el) {
+                el.oninput = e => { config[configMap[k]] = parseFloat(e.target.value); updateUI(); };
+            } else {
+                console.warn('Input not found: inp-' + k);
+            }
+        });
+
+        document.getElementById('chk-waste').onchange = e => config.showWaste = e.target.checked ? 1.0 : 0.0;
+        document.getElementById('chk-floor').onchange = e => config.floor = e.target.checked ? 1.0 : 0.0;
+
+        document.getElementById('btn-reset').onclick = runInit;
+        document.getElementById('btn-clear').onclick = () => { gl.bindFramebuffer(gl.FRAMEBUFFER, fboA); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); gl.bindFramebuffer(gl.FRAMEBUFFER, fboB); gl.clear(gl.COLOR_BUFFER_BIT); };
+        document.getElementById('btn-pause').onclick = () => state.paused = !state.paused;
+
+        canvas.onmousedown = e => { if (e.button == 2) { state.dragging = true; state.lastX = e.clientX; state.lastY = e.clientY; } else state.paint = true; state.mx = e.clientX; state.my = e.clientY; };
+        canvas.onmousemove = e => {
+            state.mx = e.clientX; state.my = e.clientY;
+            if (state.dragging) {
+                state.camX -= (e.clientX - state.lastX) / (canvas.width * state.zoom);
+                state.camY += (e.clientY - state.lastY) / (canvas.height * state.zoom);
+                state.lastX = e.clientX; state.lastY = e.clientY;
+            }
+        };
+        window.onmouseup = () => { state.dragging = false; state.paint = false; };
+        canvas.oncontextmenu = e => e.preventDefault();
+        canvas.onwheel = e => { e.preventDefault(); state.zoom = Math.max(0.1, Math.min(state.zoom * (e.deltaY < 0 ? 1.1 : 0.9), 20)); };
+        window.onresize = resize;
+
+        resize(); updateUI(); step();
+    </script>
+</body>
+
+</html>
