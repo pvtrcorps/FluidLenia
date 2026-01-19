@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://7h8433thsims"
+path="res://.godot/imported/lenia_growth.glsl-f526c8afc77b616719692fb899b5a1f9.res"
+
+[deps]
+
+source_file="res://shaders/lenia_growth.glsl"
+dest_files=["res://.godot/imported/lenia_growth.glsl-f526c8afc77b616719692fb899b5a1f9.res"]
+
+[params]
+

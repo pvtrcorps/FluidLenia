@@ -4,9 +4,11 @@
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 layout(rgba32f, set = 0, binding = 0) uniform writeonly image2D out_living;
-layout(rgba32f, set = 0, binding = 1) uniform writeonly image2D out_waste;
+layout(rgba32f, set = 0, binding = 1) uniform writeonly image2D out_living_b; // We init both to be safe
+layout(rgba32f, set = 0, binding = 2) uniform writeonly image2D out_waste;
+layout(rgba32f, set = 0, binding = 3) uniform writeonly image2D out_waste_b;
 
-layout(std430, set = 0, binding = 2) buffer Params {
+layout(std430, set = 0, binding = 4) buffer Params {
     vec2 u_res;
     float u_seed;
     float u_density;
@@ -30,15 +32,12 @@ void main() {
         return;
     }
     
-    float rnd = hash(vec2(pos) + params.u_seed * 123.0);
-    
-    // Inicio esparcido
-    float mass = step(1.0 - params.u_density, rnd);
-    if (mass > 0.0) {
-        mass = 0.5 + 0.5 * hash(vec2(pos) + params.u_seed * 99.0);
-    }
-    
     vec2 cellID = floor(uv * params.u_initGrid);
+    float cellProb = hash(cellID + params.u_seed * 33.33);
+    
+    // Block-based initialization (Solid blocks)
+    float mass = step(1.0 - params.u_density, cellProb);
+    
     float cellSeed = hash(cellID + params.u_seed * 77.7);
     
     float muStruct = cellSeed;
@@ -49,7 +48,10 @@ void main() {
     imageStore(out_living, pos, vec4(mass, muStruct, muDiet, sig));
     
     // Inicio con residuos ambientales para arrancar el metabolismo
-    // Canales B y A ahora son VELOCIDAD (X, Y) inicializada a 0
     float wasteNoise = hash(uv * 10.0 + params.u_seed);
-    imageStore(out_waste, pos, vec4(wasteNoise * 0.2, hash(uv * 5.0), 0.0, 0.0));
+    vec4 wasteVal = vec4(wasteNoise * 0.2, hash(uv * 5.0), 0.0, 0.0);
+    
+    imageStore(out_waste, pos, wasteVal);
+    imageStore(out_waste_b, pos, wasteVal);
+    imageStore(out_living_b, pos, vec4(0.0)); // Clear secondary buffer
 }

@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://u8rwqdf4febu"
+path="res://.godot/imported/lenia_velocity.glsl-74d12b443178e99bb9f08cf8bcd96f88.res"
+
+[deps]
+
+source_file="res://shaders/lenia_velocity.glsl"
+dest_files=["res://.godot/imported/lenia_velocity.glsl-74d12b443178e99bb9f08cf8bcd96f88.res"]
+
+[params]
+

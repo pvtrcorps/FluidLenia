@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://cnw5d3njwn54d"
+path="res://.godot/imported/lenia_advect.glsl-3242f41dc0e56d1fbfd47fd21fec2a6d.res"
+
+[deps]
+
+source_file="res://shaders/lenia_advect.glsl"
+dest_files=["res://.godot/imported/lenia_advect.glsl-3242f41dc0e56d1fbfd47fd21fec2a6d.res"]
+
+[params]
+
