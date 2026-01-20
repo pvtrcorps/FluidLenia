@@ -1,11 +1,12 @@
 #[compute]
 #version 450
 
-// Velocity Shader: Matches Prototype frag-flow Logic
+// Velocity Shader: Matches Prototype frag-flow Logic + GENETICS
 // Calculates flow based on:
 // 1. Growth Gradient (grad_U) - Move toward favorable growth
 // 2. Mass Repulsion (grad_M) - Avoid overcrowding  
 // 3. Chemotaxis (grad_Food) - Seek food based on diet
+// 4. GENETICS: Speed Modifiers
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
@@ -13,6 +14,9 @@ layout(set = 0, binding = 0) uniform sampler2D u_tex_kernel;
 layout(set = 0, binding = 1) uniform sampler2D u_tex_living;
 layout(rgba32f, set = 0, binding = 2) uniform writeonly image2D out_velocity;
 layout(set = 0, binding = 3) uniform sampler2D u_tex_waste;
+
+// NEW: Aux Genes
+layout(set = 0, binding = 5) uniform sampler2D u_tex_genes_aux; 
 
 layout(std430, set = 0, binding = 4) buffer Params {
     vec2 u_res;
@@ -47,6 +51,10 @@ void main() {
     float muStruct = state.g;
     float muDiet = state.b;
     float sigma = state.a;
+    
+    // Read Aux Genes [Speed, Aggro, Def, Meta]
+    vec4 auxGenes = texture(u_tex_genes_aux, uv);
+    float geneSpeed = auxGenes.r; // 0.5 to 1.5 normally
     
     // Default to small velocity if no mass
     if (mass < 0.001) {
@@ -90,8 +98,7 @@ void main() {
             vec4 wB = texture(u_tex_waste, uv - vec2(0, px.y));
             vec4 wT = texture(u_tex_waste, uv + vec2(0, px.y));
             
-            // Affinity based on diet matching (prototype logic)
-            // float targetType = fract(muDiet + u_dietOffset); // We skip dietOffset for now
+            // Affinity based on diet matching
             float targetType = muDiet;
             
             float affL = (1.0 - abs(wL.g - targetType)) * wL.r;
@@ -103,12 +110,18 @@ void main() {
         }
     }
     
-    // Combine forces (MATCHES PROTOTYPE EXACTLY)
-    // flow = grad_U - grad_M * 2.0 + grad_Food * u_chemotaxis
+    // Combine forces
     vec2 flow = grad_U - grad_M * 2.0 + grad_Food * params.u_chemotaxis;
     
+    // 4. APPLY GENETICS (Speed)
+    // Multiplier centered around 1.0 based on gene (0.0->0.5, 1.0->1.5)
+    float speedMult = 0.5 + geneSpeed; 
+    flow *= speedMult;
+
+
+    
     // CRITICAL: Clamp maximum velocity to prevent explosions
-    float maxVel = 4.0;
+    float maxVel = 5.0; // Increased slighty from 4.0 to allow fast species
     if (length(flow) > maxVel) {
         flow = normalize(flow) * maxVel;
     }

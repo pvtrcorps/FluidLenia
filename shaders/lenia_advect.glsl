@@ -2,8 +2,8 @@
 #version 450
 
 // Advection Shader: Neighbor Gather & Winner-Takes-All
-// Reads from Living (Mass + Genes) + Velocity.
-// Writes to Advected Texture (Mass + Dominant Genes).
+// Reads from Living (Mass + Genes) + Velocity + Species + AuxGenes.
+// Writes to Advected Texture (Mass + Dominant Genes + Species).
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
@@ -19,6 +19,13 @@ layout(std430, set = 0, binding = 3) buffer Params {
     float _pad0;
 } params;
 
+// NEW BINDINGS FOR SPECIES & GENES
+layout(set = 0, binding = 4) uniform usampler2D u_tex_species;
+layout(set = 0, binding = 5) uniform sampler2D u_tex_genes_aux;
+
+layout(r32ui, set = 0, binding = 6) uniform writeonly uimage2D out_advected_species;
+layout(rgba32f, set = 0, binding = 7) uniform writeonly image2D out_advected_aux;
+
 void main() {
     ivec2 pos = ivec2(gl_GlobalInvocationID.xy);
     vec2 uv = (vec2(pos) + 0.5) / params.u_res;
@@ -29,14 +36,15 @@ void main() {
     }
     
     // GATHER Logic: Loop neighbors to find who moved HERE.
-    // Search Radius must cover max velocity * dt. 
-    // Max vel ~ 4.0? dt ~ 0.25? -> 1 px.
-    // Let's use Radius 2 to be safe for larger flows.
     int R = 2;
     
     float totalMass = 0.0;
+    
+    // Winner Tracking
     float winnerMass = -1.0;
     vec3 winnerGenes = vec3(0.0); // Default traits
+    uint winnerSpecies = 0;
+    vec4 winnerAuxGenes = vec4(0.0);
     
     for (int y = -R; y <= R; y++) {
         for (int x = -R; x <= R; x++) {
@@ -52,15 +60,12 @@ void main() {
                 vec2 vel = texture(u_tex_velocity, srcUV).rg;
                 
                 // Where does src land?
-                // Note: UV space logic
                 vec2 destUV = srcUV + vel * params.u_dt * px;
                 
                 // Distance to ME (uv)
-                // Use pixels for precise distance
                 vec2 distVec = (destUV - uv) * params.u_res; 
                 
-                // Bilinear weight (standard scatter/gather dual)
-                // weight = max(0, 1 - |dx|) * max(0, 1 - |dy|)
+                // Bilinear weight
                 float weight = max(0.0, 1.0 - abs(distVec.x)) * max(0.0, 1.0 - abs(distVec.y));
                 
                 if (weight > 0.0) {
@@ -71,13 +76,25 @@ void main() {
                     if (incomingMass > winnerMass) {
                         winnerMass = incomingMass;
                         winnerGenes = srcState.gba;
+                        
+                        // Sample extra data
+                        winnerSpecies = texture(u_tex_species, srcUV).r;
+                        winnerAuxGenes = texture(u_tex_genes_aux, srcUV);
                     }
+
                 }
             }
         }
     }
     
-    // Keep consistent genes if empty? Default genes handled in Growth.
-    // Just output what we found.
+    // Fallback: If mass exists but somehow winnerSpecies is 0 (should correspond to winnerGenes logic)
+    // Actually, if totalMass > 0, winnerMass > -1, so we must have entered the if(incoming > winner) block at least once.
+    // UNLESS srcState.r was > 0.0001 but texture(species) was 0.
+    
+    // Output
     imageStore(out_advected, pos, vec4(totalMass, winnerGenes));
+
+    imageStore(out_advected_species, pos, uvec4(winnerSpecies, 0u, 0u, 0u));
+    imageStore(out_advected_aux, pos, winnerAuxGenes);
 }
+

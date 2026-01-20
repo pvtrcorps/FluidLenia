@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://n6wnnfd37wg"
+path="res://.godot/imported/lenia_sum.glsl-7dee080f96bdf196d57992891e8c7a09.res"
+
+[deps]
+
+source_file="res://shaders/lenia_sum.glsl"
+dest_files=["res://.godot/imported/lenia_sum.glsl-7dee080f96bdf196d57992891e8c7a09.res"]
+
+[params]
+

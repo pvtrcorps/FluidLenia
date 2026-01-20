@@ -1,0 +1,365 @@
+# 🧬 Roadmap: Towards True Emergent Evolution in Flow Lenia
+
+## Current State Analysis
+
+After reviewing your codebase, here's what you have:
+
+### ✅ What's Working
+- **Mass-conserving flow dynamics** via advection + scatter
+- **Basic genetics** (3 genes: Structure/μ, Diet, Sigma)
+- **Metabolic cycle**: Living ↔ Waste transfer
+- **Chemotaxis**: Diet-based food seeking
+- **Mutation**: Random drift in gene space
+- **Immiscibility**: Velocity-weighted gene mixing
+
+### ⚠️ Current Limitations for True Emergence
+
+| Limitation | Why It Matters |
+|------------|----------------|
+| **Fixed genetic dimensionality** | Only 3 genes limits "phenotype space" |
+| **No discrete species identity** | Organisms blend continuously, can't track lineages |
+| **No selective pressure differentiation** | All cells face same environment |
+| **No spatial/temporal niche separation** | No day/night, no temperature gradients |
+| **No predator-prey dynamics** | Only scavenging (eating waste) |
+| **No reproduction events** | Cells "grow" but don't "divide" |
+| **No memory/behavior** | Cells are purely reactive |
+
+---
+
+## 🎯 DeepMind-Style Approach: Key Principles
+
+### 1. **Open-Endedness Over Optimization**
+Don't optimize for a single fitness function. The goal is to create conditions where novelty is continuously generated. See: [Open-Ended Learning Leads to Generally Capable Agents](https://arxiv.org/abs/2107.12808)
+
+### 2. **Intrinsic vs Extrinsic Selection**
+The "fitness" should emerge from the physics (mass conservation, resource competition), not be imposed externally.
+
+### 3. **Minimal Viable Chromosomes**
+Each "species" should be defined by a compact but expressive genome that:
+- Can be inherited
+- Can mutate
+- Has phenotypic effects
+- Creates trade-offs
+
+### 4. **Scale Separation**
+- **Micro**: Individual cell dynamics (your current math)
+- **Meso**: Organism/colony patterns
+- **Macro**: Ecosystem dynamics (predator-prey cycles, niches)
+
+---
+
+## 🚀 Proposed Evolutionary Phases
+
+```mermaid
+flowchart TD
+    subgraph PHASE1["Phase 1: Species Identity"]
+        A1[Discrete Species IDs] --> A2[Lineage Tracking]
+        A2 --> A3[Speciation Events]
+    end
+    
+    subgraph PHASE2["Phase 2: Expanded Genetics"]
+        B1[Extended Genome] --> B2[Kernel Shape Genes]
+        B2 --> B3[Behavioral Genes]
+    end
+    
+    subgraph PHASE3["Phase 3: Ecological Pressure"]
+        C1[Environmental Gradients] --> C2[Resource Scarcity]
+        C2 --> C3[Carrying Capacity]
+    end
+    
+    subgraph PHASE4["Phase 4: Trophic Dynamics"]
+        D1[Active Predation] --> D2[Defense Mechanisms]
+        D2 --> D3[Food Web]
+    end
+    
+    subgraph PHASE5["Phase 5: Open-Ended Evolution"]
+        E1[Novelty Search] --> E2[Auto-Curriculum]
+        E2 --> E3[Minimal Criterion Coevolution]
+    end
+    
+    PHASE1 --> PHASE2 --> PHASE3 --> PHASE4 --> PHASE5
+```
+
+---
+
+## Phase 1: Species Identity & Lineage (Foundation)
+
+### Goal
+Create discrete, trackable species that can branch and go extinct.
+
+### Implementation
+
+#### 1.1 Species ID Texture
+Add a new `tex_species: RID` (R32UI or R16G16 for species + generation):
+
+```glsl
+// In lenia_init.glsl
+layout(r32ui, set = 0, binding = 5) uniform writeonly uimage2D out_species;
+
+void main() {
+    // Assign unique species ID per initial blob
+    uint speciesID = uint(cellID.x * 100.0 + cellID.y + u_seed * 1000.0);
+    imageStore(out_species, pos, uvec4(speciesID, 0, 0, 0));
+}
+```
+
+#### 1.2 Speciation Rule
+When mutation drift exceeds threshold, create NEW species ID:
+
+```glsl
+// In lenia_growth.glsl
+float geneticDistance = length(finalGenes - parentGenes);
+if (geneticDistance > SPECIATION_THRESHOLD && hash(uv) < 0.01) {
+    speciesID = generateNewSpeciesID(); // e.g., global atomic counter
+}
+```
+
+#### 1.3 Species Statistics Buffer
+Maintain a GPU-side species statistics buffer:
+
+```glsl
+struct SpeciesStats {
+    float totalMass;
+    float avgMu;
+    float avgDiet;
+    float avgSigma;
+    uint cellCount;
+    uint generation;
+};
+```
+
+This enables tracking of:
+- Population dynamics per species
+- Extinction events (mass = 0)
+- Speciation trees
+
+---
+
+## Phase 2: Expanded Genetic Dimensionality
+
+### Goal
+Move from 3 genes to 8-16 genes with meaningful phenotypic expression.
+
+### Proposed Extended Genome
+
+| Gene | Effect | Range | Trade-off |
+|------|--------|-------|-----------|
+| **μ_struct** | Kernel peak position | 0.08-0.5 | Density preference |
+| **σ** | Sensitivity width | 0.01-0.1 | Generalist vs specialist |
+| **μ_diet** | Preferred waste type | 0-1 | What you can eat |
+| **speed** | Movement multiplier | 0.5-2.0 | Speed vs stability |
+| **cohesion** | Mass repulsion resistance | 0-1 | Colony vs dispersal |
+| **aggression** | Active hunting strength | 0-1 | Predator capability |
+| **armor** | Resistance to predation | 0-1 | More mass cost |
+| **metabolism** | eat_rate × decay balance | 0.5-2.0 | Fast-living vs slow |
+| **quorum** | Density for activation | 0-1 | Solo vs swarm behavior |
+| **kernel_shape** | Blend between kernel profiles | 0-1 | Pattern formation |
+
+### Storage Strategy
+Use **2 RGBA32F textures** for species state:
+- `tex_living_genes1`: [mass, μ_struct, μ_diet, σ]
+- `tex_living_genes2`: [speed, cohesion, aggression, armor]
+
+Or use R32UI species ID + lookup table for genes (more efficient for many species).
+
+---
+
+## Phase 3: Ecological Pressure & Niches
+
+### Goal
+Create environmental heterogeneity that forces adaptation.
+
+### 3.1 Resource Gradient Texture
+
+```glsl
+// Add u_tex_environment (could be pre-computed or dynamic)
+layout(set = 0, binding = 8) uniform sampler2D u_tex_environment;
+
+void main() {
+    vec4 env = texture(u_tex_environment, uv);
+    float localTemp = env.r;      // 0=cold, 1=hot
+    float localResource = env.g;  // Base food availability
+    float localHazard = env.b;    // Radiation, toxins, etc.
+    
+    // Temperature affects metabolism
+    float metabolismMod = 0.5 + localTemp * 1.0; // Cold = slow, hot = fast
+    
+    // Hazard causes extra decay
+    float hazardDecay = localHazard * 0.1;
+}
+```
+
+### 3.2 Dynamic Carrying Capacity
+
+Instead of fixed `crowdPenalty`:
+
+```glsl
+float localCarryingCapacity = baseCapacity * texture(u_tex_environment, uv).g;
+float crowdPenalty = max(0.0, newMass - localCarryingCapacity) * 1.5;
+```
+
+### 3.3 Day/Night Cycle
+
+```glsl
+uniform float u_time;
+
+float dayPhase = 0.5 + 0.5 * sin(u_time * 0.01); // 0-1-0 cycle
+float photosynthesis = dayPhase * localLight; // "Autotroph" energy during day
+```
+
+---
+
+## Phase 4: Trophic Dynamics (Predator-Prey)
+
+### Goal
+Enable active predation, not just scavenging.
+
+### 4.1 Direct Mass Transfer
+
+Currently: Living → Waste → Living (scavenging)  
+New: Living → Living (predation)
+
+```glsl
+// In velocity/growth shader
+// If this cell has aggression gene and neighbor is "prey"...
+vec4 neighbor = texture(u_tex_living, uv + offset);
+float preyMass = neighbor.r;
+
+// Can I eat this species?
+float speciesDiff = abs(myMu - neighbor.g); // Trophic distance
+bool canPredate = myAggression > neighbor.armor && speciesDiff > 0.2;
+
+if (canPredate && preyMass > 0.01) {
+    float stolen = min(preyMass * 0.1, myAggression * 0.1);
+    // Transfer mass directly (need atomic or scatter pattern)
+}
+```
+
+### 4.2 Defense Mechanisms
+
+- **Armor gene**: Reduces mass loss from predation
+- **Toxin gene**: Counter-attacks predator (damages them)
+- **Speed gene**: Escape velocity bonus
+- **Mimicry**: Copy successful neighbor's color (struct gene)
+
+### 4.3 Food Web Layers
+
+```
+Layer 3: Apex Predators (high aggression, low speed)
+    ↑
+Layer 2: Omnivores (medium aggression, medium speed)
+    ↑
+Layer 1: Herbivores (low aggression, high speed)
+    ↑
+Layer 0: Waste/Resources (abiotic)
+```
+
+---
+
+## Phase 5: Open-Ended Evolution Framework
+
+### Goal
+Create conditions for unbounded complexity growth.
+
+### 5.1 Novelty Search (Exploration Bonus)
+
+Track species diversity. Reward novel genomes:
+
+```glsl
+// When spawning/mutating, bonus if far from all existing species
+float noveltyBonus = minDistanceToAllSpecies(newGenome);
+float survivalBonus = noveltyBonus * 0.1; // Small boost to decay resistance
+```
+
+### 5.2 Minimal Criterion Coevolution
+
+> "A species only persists if it solves a problem that another species cannot."
+
+Implementation:
+- Track which resources each species consumes
+- If two species compete for exact same niche, intensify competition
+- Survivors are those with unique adaptations
+
+### 5.3 Auto-Curriculum (POET-style)
+
+Dynamically adjust environment complexity:
+
+```gdscript
+# In LeniaSimulation.gd
+func adjust_environment():
+    var diversity = count_species()
+    var avg_age = average_species_age()
+    
+    if diversity < MIN_DIVERSITY:
+        # Make environment easier (more resources)
+        resource_density *= 1.1
+    elif diversity > MAX_DIVERSITY and avg_age > STABILITY_TIME:
+        # Introduce new challenge (new hazard zone, predator injection)
+        introduce_perturbation()
+```
+
+---
+
+## 📋 Implementation Priority (Next Steps)
+
+### Immediate (This Week)
+1. [ ] Add `tex_species` (R32UI) for species tracking
+2. [ ] Implement speciation threshold in [lenia_growth.glsl](file:///c:/Users/anton/Documents/FluidLenia/shaders/lenia_growth.glsl)
+3. [ ] Add CPU-side species counter and extinction detection
+
+### Short-Term (This Month)
+4. [ ] Expand genome to 6-8 genes (add speed, cohesion, aggression)
+5. [ ] Add environment gradient texture with temperature/resources
+6. [ ] Implement local carrying capacity
+
+### Medium-Term (Next Month)
+7. [ ] Predator-prey mass transfer
+8. [ ] Defense mechanisms (armor, toxin)
+9. [ ] Species statistics buffer for real-time analysis
+
+### Long-Term (Post-MVP)
+10. [ ] Novelty search metric
+11. [ ] Auto-curriculum environment adjustment
+12. [ ] Phylogenetic tree visualization
+
+---
+
+## 🔬 Research References
+
+| Paper | Relevance |
+|-------|-----------|
+| [Flow Lenia (Plantec et al.)](https://arxiv.org/abs/2212.07906) | Mass-conserving CA foundation |
+| [Open-Ended Learning (DeepMind)](https://arxiv.org/abs/2107.12808) | Environment auto-curriculum |
+| [POET](https://eng.uber.com/poet-open-ended-deep-learning/) | Coevolving agents + environments |
+| [Minimal Criterion Coevolution](https://dl.acm.org/doi/10.1145/3205455.3205521) | Diversity maintenance |
+| [Innovation Engines](https://www.cs.cmu.edu/~jlehman/) | Novelty search for open-endedness |
+
+---
+
+## 🎮 Expected Emergent Phenomena
+
+If implemented correctly, you should observe:
+
+1. **Niche Partitioning**: Species specializing in different temperature zones
+2. **Predator-Prey Oscillations**: Classic Lotka-Volterra dynamics
+3. **Arms Races**: Predators getting faster, prey getting armored
+4. **Speciation Bursts**: After environment changes, rapid diversification
+5. **Extinctions**: Overspecialized species dying after environment shifts
+6. **Emergent Symbiosis**: Species that "clean up" waste from others
+7. **Spatial Patterns**: Biofilms, territories, migration routes
+
+---
+
+## Questions for You
+
+1. **Rendering Priority**: Do you want to visualize species IDs (distinct colors per species) vs current gene-based coloring?
+
+2. **Performance Budget**: How many species can your GPU handle? This affects whether we use lookup tables vs per-cell genes.
+
+3. **Observation Tools**: Do you want real-time graphs of species populations, or just visual inspection?
+
+4. **Initial Focus**: Would you prefer to start with:
+   - **Ecological pressure** (environment gradients) - easier to implement
+   - **Predator-prey** (direct mass transfer) - more dramatic dynamics
+
+Let me know which direction excites you most, and I'll create a detailed implementation plan for that phase!
